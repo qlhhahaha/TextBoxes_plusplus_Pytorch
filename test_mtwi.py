@@ -17,19 +17,29 @@ import torch.utils.data as data
 from ssd import build_ssd
 import cv2
 import warnings
+
 warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
-parser.add_argument('--trained_model', default='weights/ssd384_mtwi_60000.pth',
+
+parser.add_argument('--trained_model', default='weights/ssd_mtwi_50000.pth',
                     type=str, help='Trained state_dict file path to open')
-parser.add_argument('--save_folder', default='F:/chromedown/mtwi_2018_task2_test/icpr_mtwi_task2/output/sample_task2/', type=str,
+
+parser.add_argument('--save_folder', default='D:/lab_working/SSD/TextBoxes_plusplus_Pytorch/icpr_mtwi_task2/output/',
+                    type=str,
                     help='Dir to save results')
+
 parser.add_argument('--visual_threshold', default=0.2, type=float,
                     help='Final confidence threshold')
+
 parser.add_argument('--cuda', default=True, type=bool,
                     help='Use cuda to train model')
-parser.add_argument('--mtwi_root', default='F:\chromedown\mtwi_2018_task2_test\icpr_mtwi_task2', help='Location of VOC root directory')
+
+parser.add_argument('--mtwi_root', default=r"D:\lab_working\SSD\TextBoxes_plusplus_Pytorch\icpr_mtwi_task2",
+                    help='Location of VOC root directory')
+
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")
+
 args = parser.parse_args()
 
 if args.cuda and torch.cuda.is_available():
@@ -41,11 +51,11 @@ if not os.path.exists(args.save_folder):
     os.mkdir(args.save_folder)
 
 
-def test_net(save_folder, net, cuda, testset, transform, thresh):
+def textbox_test_net(save_folder, net, cuda, testset, transform, thresh):
     # dump predictions and assoc. ground truth to text file for now
     num_images = len(testset)
     for i in range(num_images):
-        print('Testing image {:d}/{:d}....'.format(i+1, num_images))
+        print('Testing image {:d}/{:d}....'.format(i + 1, num_images))
         img, image_name = testset.pull_image(i)
         filename = save_folder + image_name[:-3] + 'txt'
         rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -55,7 +65,7 @@ def test_net(save_folder, net, cuda, testset, transform, thresh):
         if cuda:
             x = x.cuda()
 
-        y = net(x)      # forward pass
+        y = net(x)  # forward pass
         detections = y.data
         # scale each detection back up to the image
         # height, width, channels = img.shape
@@ -64,16 +74,16 @@ def test_net(save_folder, net, cuda, testset, transform, thresh):
             with open(filename, mode='a') as f:
                 j = 0
                 while detections[0, i, j, 0] >= thresh:
-                    pt = (detections[0, i, j, 1:].clamp(max=1, min=0)*scale).cpu().numpy()
+                    pt = (detections[0, i, j, 1:].clamp(max=1, min=0) * scale).cpu().numpy()
                     coords = pt[4], pt[5], pt[6], pt[7], pt[8], pt[9], pt[10], pt[11]
                     f.write(','.join(str(c) for c in coords) + '\n')
                     j += 1
 
 
-def test_mtwi():
+def textbox_test_mtwi():
     # load net
-    num_classes = len(MTWI_CLASSES) + 1 # +1 background
-    net = build_ssd('test', 384, num_classes) # initialize SSD
+    num_classes = len(MTWI_CLASSES) + 1  # +1 background
+    net = build_ssd('test', 384, num_classes)  # initialize SSD
     net.load_state_dict(torch.load(args.trained_model))
     net.eval()
     print('Finished loading model!')
@@ -83,10 +93,10 @@ def test_mtwi():
         net = net.cuda()
         cudnn.benchmark = True
     # evaluation
-    test_net(args.save_folder, net, args.cuda, testset,
+    textbox_test_net(args.save_folder, net, args.cuda, testset,
              BaseTransform(net.size),
              thresh=args.visual_threshold)
 
 
 if __name__ == '__main__':
-    test_mtwi()
+    textbox_test_mtwi()

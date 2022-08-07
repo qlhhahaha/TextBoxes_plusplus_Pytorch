@@ -3,6 +3,7 @@ import torch
 from shapely.geometry import Polygon
 import numpy as np
 
+
 def point_form(boxes):
     """ Convert prior_boxes to (xmin, ymin, xmax, ymax)
     representation for comparison to point form ground truth data.
@@ -11,8 +12,10 @@ def point_form(boxes):
     Return:
         boxes: (tensor) Converted xmin, ymin, xmax, ymax form of boxes.
     """
-    return torch.cat((boxes[:, :2] - boxes[:, 2:]/2,     # xmin, ymin
-                     boxes[:, :2] + boxes[:, 2:]/2), 1)  # xmax, ymax
+    return torch.cat((boxes[:, :2] - boxes[:, 2:] / 2,  # xmin, ymin
+                      boxes[:, :2] + boxes[:, 2:] / 2), 1)  # xmax, ymax
+
+
 def point_form_2(boxes):
     """ 将 prior_boxes 转换为按顺时针从左上到左下的坐标(x1,y1,x2,y2,x3,y3,x4,y4)
     representation for comparison to point form ground truth data.
@@ -32,6 +35,7 @@ def point_form_2(boxes):
     reboxes[:, 7] = boxes[:, 1] + boxes[:, 3] / 2
     return reboxes
 
+
 def center_size(boxes):
     """ Convert prior_boxes to (cx, cy, w, h)
     representation for comparison to center-size form ground truth data.
@@ -40,7 +44,7 @@ def center_size(boxes):
     Return:
         boxes: (tensor) Converted xmin, ymin, xmax, ymax form of boxes.
     """
-    return torch.cat((boxes[:, 2:] + boxes[:, :2])/2,  # cx, cy
+    return torch.cat((boxes[:, 2:] + boxes[:, :2]) / 2,  # cx, cy
                      boxes[:, 2:] - boxes[:, :2], 1)  # w, h
 
 
@@ -85,10 +89,10 @@ def jaccard(box_a, box_b):
     box_a_4[:, 3] = box_a[:, 1:8:2].max(dim=1)[0]
 
     inter = intersect(box_a_4, box_b)
-    area_a = ((box_a_4[:, 2]-box_a_4[:, 0]) *
-              (box_a_4[:, 3]-box_a_4[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
-    area_b = ((box_b[:, 2]-box_b[:, 0]) *
-              (box_b[:, 3]-box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
+    area_a = ((box_a_4[:, 2] - box_a_4[:, 0]) *
+              (box_a_4[:, 3] - box_a_4[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
+    area_b = ((box_b[:, 2] - box_b[:, 0]) *
+              (box_b[:, 3] - box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
     return inter / union  # [A,B]
 
@@ -103,7 +107,7 @@ def intersect_ploy(box_a, box_b):
     box_a = box_a.reshape(4, 2)
     box_b = box_b.reshape(4, 2)
 
-    poly1 = Polygon(box_a).convex_hull      # Polygon：多边形对象
+    poly1 = Polygon(box_a).convex_hull  # Polygon：多边形对象
     poly2 = Polygon(box_b).convex_hull
 
     if not poly1.intersects(poly2):
@@ -129,14 +133,16 @@ def jaccard_2(box_a, box_b, overlaps):
     A = box_a.size(0)
     B = box_b.size(0)
 
-    box_a_index,  box_b_index = torch.where(overlaps>0)
+    box_a_index, box_b_index = torch.where(overlaps > 0)
     inter = torch.zeros(A, B)
     union = torch.zeros(A, B)
-    inter_union = np.array([intersect_ploy(box_a[box_a_index[i]], box_b[box_b_index[i]]) for i in range(len(box_a_index))])
+    inter_union = np.array(
+        [intersect_ploy(box_a[box_a_index[i]], box_b[box_b_index[i]]) for i in range(len(box_a_index))])
     for j in range(len(box_a_index)):
         inter[box_a_index[j], box_b_index[j]] = inter_union[j, 0]
         union[box_a_index[j], box_b_index[j]] = inter_union[j, 1]
     return inter / union  # [A,B]
+
 
 def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
     """Match each prior box with the ground truth box of the highest jaccard
@@ -160,9 +166,9 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
 
     # (Bipartite Matching)
     # [1,num_objects] best prior for each ground truth
-    best_prior_overlap, best_prior_idx = overlaps.max(1, keepdim=True) # (A, 1) 每一行的最大值，即单一真实框和预选框IOU最大的一个下标
+    best_prior_overlap, best_prior_idx = overlaps.max(1, keepdim=True)  # (A, 1) 每一行的最大值，即单一真实框和预选框IOU最大的一个下标
     # [1,num_priors] best ground truth for each prior
-    best_truth_overlap, best_truth_idx = overlaps.max(0, keepdim=True) # (1, B) 每一列的最大值，即单一预选框和真实框IOU最大的一个下标
+    best_truth_overlap, best_truth_idx = overlaps.max(0, keepdim=True)  # (1, B) 每一列的最大值，即单一预选框和真实框IOU最大的一个下标
     best_truth_idx.squeeze_(0)
     best_truth_overlap.squeeze_(0)
     best_prior_idx.squeeze_(1)
@@ -172,12 +178,12 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
     # ensure every gt matches with its prior of max overlap
     for j in range(best_prior_idx.size(0)):
         best_truth_idx[best_prior_idx[j]] = j
-    matches = truths[best_truth_idx]          # Shape: [num_priors,4] [num_priors,8], point-form
-    conf = labels[best_truth_idx] + 1         # Shape: [num_priors]
+    matches = truths[best_truth_idx]  # Shape: [num_priors,4] [num_priors,8], point-form
+    conf = labels[best_truth_idx] + 1  # Shape: [num_priors]
     conf[best_truth_overlap < threshold] = 0  # label as background
-    pos = torch.where(conf>0)
+    pos = torch.where(conf > 0)
     loc = encode(matches, priors, pos, variances)
-    loc_t[idx] = loc    # [num_priors,4] encoded offsets to learn
+    loc_t[idx] = loc  # [num_priors,4] encoded offsets to learn
     conf_t[idx] = conf  # [num_priors] top class label for each prior
 
 
@@ -190,9 +196,9 @@ def define_orient(matched, horizontal_rectangle):
     '''
     # 1234-2341-3412-4123
     distance_min_1 = torch.sum((matched[:, 0:2] - horizontal_rectangle[:, 0:2]) ** 2, dim=1) + \
-                   torch.sum((matched[:, 2:4] - horizontal_rectangle[:, 2:4]) ** 2, dim=1) + \
-                   torch.sum((matched[:, 4:6] - horizontal_rectangle[:, 4:6]) ** 2, dim=1) + \
-                   torch.sum((matched[:, 6:8] - horizontal_rectangle[:, 6:8]) ** 2, dim=1) # (num_priors)
+                     torch.sum((matched[:, 2:4] - horizontal_rectangle[:, 2:4]) ** 2, dim=1) + \
+                     torch.sum((matched[:, 4:6] - horizontal_rectangle[:, 4:6]) ** 2, dim=1) + \
+                     torch.sum((matched[:, 6:8] - horizontal_rectangle[:, 6:8]) ** 2, dim=1)  # (num_priors)
 
     distance_min_2 = torch.sum((matched[:, 2:4] - horizontal_rectangle[:, 0:2]) ** 2, dim=1) + \
                      torch.sum((matched[:, 4:6] - horizontal_rectangle[:, 2:4]) ** 2, dim=1) + \
@@ -212,7 +218,7 @@ def define_orient(matched, horizontal_rectangle):
     origin = torch.cat((distance_min_1.unsqueeze(1),
                         distance_min_2.unsqueeze(1),
                         distance_min_3.unsqueeze(1),
-                        distance_min_4.unsqueeze(1)), 1) # (num_priors, 4)
+                        distance_min_4.unsqueeze(1)), 1)  # (num_priors, 4)
 
     origin_indices = origin.min(dim=1).indices  # (num_priors)
     for i, box in enumerate(matched):
@@ -254,13 +260,13 @@ def encode(matched, priors, pos, variances):
     w = x1 - x0
     h = y1 - y0
 
-    delta_x = ((x1+x0)/2 - priors[:, 0].unsqueeze(1))/priors[:, 2].unsqueeze(1)
-    delta_y = ((y1+y0)/2 - priors[:, 1].unsqueeze(1))/priors[:, 3].unsqueeze(1)
-    delta_w = torch.log(w/priors[:, 2].unsqueeze(1))
-    delta_h = torch.log(h/priors[:, 3].unsqueeze(1))
+    delta_x = ((x1 + x0) / 2 - priors[:, 0].unsqueeze(1)) / priors[:, 2].unsqueeze(1)
+    delta_y = ((y1 + y0) / 2 - priors[:, 1].unsqueeze(1)) / priors[:, 3].unsqueeze(1)
+    delta_w = torch.log(w / priors[:, 2].unsqueeze(1))
+    delta_h = torch.log(h / priors[:, 3].unsqueeze(1))
 
     # 预选框
-    priors_8 = point_form_2(priors) # center-offset form to 8point-form
+    priors_8 = point_form_2(priors)  # center-offset form to 8point-form
     matched[:, 0:7:2] = (matched[:, 0:7:2] - priors_8[:, 0:7:2]) / priors[:, 2].unsqueeze(1)
     matched[:, 1:8:2] = (matched[:, 1:8:2] - priors_8[:, 1:8:2]) / priors[:, 3].unsqueeze(1)
 
@@ -269,6 +275,7 @@ def encode(matched, priors, pos, variances):
 
     # return target for smooth_l1_loss
     return target_delta  # [num_priors,12]
+
 
 # Adapted from https://github.com/Hakuyume/chainer-ssd
 def decode(loc, priors, variances):
@@ -304,7 +311,7 @@ def log_sum_exp(x):
         x (Variable(tensor)): conf_preds from conf layers
     """
     x_max = x.data.max()
-    return torch.log(torch.sum(torch.exp(x-x_max), 1, keepdim=True)) + x_max
+    return torch.log(torch.sum(torch.exp(x - x_max), 1, keepdim=True)) + x_max
 
 
 # Original author: Francisco Massa:
@@ -353,18 +360,25 @@ def nms(boxes, scores, overlap=(0.5, 0.2), top_k=200):
         if idx_f.size(0) == 1:
             break
         idx_f = idx_f[:-1]  # remove kept element from view
+
         # load bboxes of next highest vals
-        torch.index_select(x1, 0, idx_f, out=xx1)
-        torch.index_select(y1, 0, idx_f, out=yy1)
-        torch.index_select(x2, 0, idx_f, out=xx2)
-        torch.index_select(y2, 0, idx_f, out=yy2)
+        # torch.index_select(x1, 0, idx_f, out=xx1)
+        # torch.index_select(y1, 0, idx_f, out=yy1)
+        # torch.index_select(x2, 0, idx_f, out=xx2)
+        # torch.index_select(y2, 0, idx_f, out=yy2)
+        xx1 = torch.index_select(x1, 0, idx_f)
+        yy1 = torch.index_select(y1, 0, idx_f)
+        xx2 = torch.index_select(x2, 0, idx_f)
+        yy2 = torch.index_select(y2, 0, idx_f)
+
         # store element-wise max with next highest score
         xx1 = torch.clamp(xx1, min=x1[i])
         yy1 = torch.clamp(yy1, min=y1[i])
         xx2 = torch.clamp(xx2, max=x2[i])
         yy2 = torch.clamp(yy2, max=y2[i])
-        w.resize_as_(xx2)
-        h.resize_as_(yy2)
+
+        # w.reshape(xx2.shape)
+        # h.reshape(yy2.shape)
         w = xx2 - xx1
         h = yy2 - yy1
         # check sizes of xx1 and xx2.. after each iteration
@@ -409,21 +423,29 @@ def nms(boxes, scores, overlap=(0.5, 0.2), top_k=200):
             break
         max_box = boxes[i]
         idx_s = idx_s[1:]
-        torch.index_select(x1, 0, idx_s, out=xx1)
-        torch.index_select(y1, 0, idx_s, out=yy1)
-        torch.index_select(x2, 0, idx_s, out=xx2)
-        torch.index_select(y2, 0, idx_s, out=yy2)
-        torch.index_select(x3, 0, idx_s, out=xx3)
-        torch.index_select(y3, 0, idx_s, out=yy3)
-        torch.index_select(x4, 0, idx_s, out=xx4)
-        torch.index_select(y4, 0, idx_s, out=yy4)
+        # torch.index_select(x1, 0, idx_s, out=xx1)
+        # torch.index_select(y1, 0, idx_s, out=yy1)
+        # torch.index_select(x2, 0, idx_s, out=xx2)
+        # torch.index_select(y2, 0, idx_s, out=yy2)
+        # torch.index_select(x3, 0, idx_s, out=xx3)
+        # torch.index_select(y3, 0, idx_s, out=yy3)
+        # torch.index_select(x4, 0, idx_s, out=xx4)
+        # torch.index_select(y4, 0, idx_s, out=yy4)
+
+        xx1 = torch.index_select(x1, 0, idx_s)
+        yy1 = torch.index_select(y1, 0, idx_s)
+        xx2 = torch.index_select(x2, 0, idx_s)
+        yy2 = torch.index_select(y2, 0, idx_s)
+        xx3 = torch.index_select(x3, 0, idx_s)
+        yy3 = torch.index_select(y3, 0, idx_s)
+        xx4 = torch.index_select(x4, 0, idx_s)
+        yy4 = torch.index_select(y4, 0, idx_s)
 
         inter_union = np.array([intersect_ploy(max_box[4:12], np.array([xx1[i], yy1[i],
-                                                         xx2[i], yy2[i],
-                                                         xx3[i], yy3[i],
-                                                         xx4[i], yy4[i]])) for i in range(xx1.shape[0])])
+                                                                        xx2[i], yy2[i],
+                                                                        xx3[i], yy3[i],
+                                                                        xx4[i], yy4[i]])) for i in range(xx1.shape[0])])
         inter, union = inter_union[:, 0], inter_union[:, 1]
         IoU_s = torch.tensor(inter / union)
         idx_s = idx_s[IoU_s.le(overlap[1])]
     return keep_s, count_s
-

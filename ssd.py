@@ -102,10 +102,10 @@ class SSD(nn.Module):
         conf = torch.cat([o.view(o.size(0), -1) for o in conf], 1)
         if self.phase == "test":
             output = self.detect(
-                loc.view(loc.size(0), -1, 12),                   # loc preds
+                loc.view(loc.size(0), -1, 12),  # loc preds  定位的预测
                 self.softmax(conf.view(conf.size(0), -1,
-                             self.num_classes)),                # conf preds
-                self.priors.type(type(x.data))                  # default boxes
+                                       self.num_classes)),  # conf preds  分类的预测
+                self.priors.type(type(x.data))  # default boxes  预测框
             )
         else:
             output = (

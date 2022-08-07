@@ -37,17 +37,20 @@ class MTWIAnnotationTransform(object):
             a list containing lists of bounding boxes  [bbox coords, class name]
         """
         res = []
+        # 遍历这张图的所有物体
         for obj in target:
             obj_list = obj.strip().split(',')
             if obj_list[8] == '###':
                 continue
             name = 'text'
             bndbox = []
+
             for i, pt in enumerate(obj_list[:8]):
                 cur_pt = float(pt)
                 # scale height or width
                 cur_pt = cur_pt / width if i % 2 == 0 else cur_pt / height
                 bndbox.append(cur_pt)
+
             p12 = (bndbox[0] - bndbox[2], bndbox[1] - bndbox[3])
             p23 = (bndbox[2] - bndbox[4], bndbox[3] - bndbox[5])
             if p12[0]*p23[1]-p12[1]*p23[0] < 0:
@@ -88,8 +91,12 @@ class MTWIDetection(data.Dataset):
         self._annopath = osp.join(self.root, 'txt_train', '{}.txt')
         self._imgpath = osp.join(self.root, 'image_train', '{}.jpg')
         self.ids = list()
+
         for files in os.listdir(osp.join(self.root, 'txt_train')):
             self.ids.append(files.replace('.txt', ''))
+
+        # for files in os.listdir(osp.join(self.root, 'image_train')):
+        #     self.ids.append(files.replace('.jpg', ''))
 
     def __getitem__(self, index):
         im, gt, h, w = self.pull_item(index)
