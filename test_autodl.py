@@ -22,10 +22,10 @@ warnings.filterwarnings("ignore")
 
 parser = argparse.ArgumentParser(description='Single Shot MultiBox Detection')
 
-parser.add_argument('--trained_model', default='weights/ssd_mtwi_50000.pth',
+parser.add_argument('--trained_model', default='weights/ssd_mtwi_30000.pth',
                     type=str, help='Trained state_dict file path to open')
 
-parser.add_argument('--save_folder', default='D:/lab_working/SSD/TextBoxes_plusplus_Pytorch/icpr_mtwi_task2/output/',
+parser.add_argument('--save_folder', default='/root/autodl-tmp/TextBoxes_plusplus_Pytorch/icpr_mtwi_task2/output/',
                     type=str,
                     help='Dir to save results')
 
@@ -35,7 +35,7 @@ parser.add_argument('--visual_threshold', default=0.18, type=float,
 parser.add_argument('--cuda', default=True, type=bool,
                     help='Use cuda to train model')
 
-parser.add_argument('--mtwi_root', default=r"D:\lab_working\SSD\TextBoxes_plusplus_Pytorch\icpr_mtwi_task2",
+parser.add_argument('--mtwi_root', default='/root/autodl-tmp/TextBoxes_plusplus_Pytorch/icpr_mtwi_task2',
                     help='Location of VOC root directory')
 
 parser.add_argument('-f', default=None, type=str, help="Dummy arg so we can load in Jupyter Notebooks")

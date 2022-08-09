@@ -16,9 +16,8 @@ import numpy as np
 import argparse
 from torchsummary import summary
 
-
-# import visdom
-# viz = visdom.Visdom()
+import visdom
+#viz = visdom.Visdom()
 
 def str2bool(v):
     return v.lower() in ("yes", "true", "t", "1")
@@ -30,7 +29,7 @@ train_set = parser.add_mutually_exclusive_group()
 parser.add_argument('--dataset', default='mtwi384', choices=['mtwi384', 'mtwi768'],
                     type=str, help='mtwi384 or mtwi768')
 
-parser.add_argument('--dataset_root', default=r"D:\lab_working\SSD\TextBoxes_plusplus_Pytorch\mtwi_2018_train",
+parser.add_argument('--dataset_root', default="/root/autodl-tmp/TextBoxes_plusplus_Pytorch/mtwi_2018_train",
                     help='Dataset root directory path')
 
 parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
@@ -39,7 +38,7 @@ parser.add_argument('--basenet', default='vgg16_reducedfc.pth',
 parser.add_argument('--batch_size', default=8, type=int,
                     help='Batch size for training')
 
-parser.add_argument('--resume', default=None, type=str,
+parser.add_argument('--resume', default="/root/autodl-tmp/TextBoxes_plusplus_Pytorch/checkpoint/ssd_mtwi384.pth", type=str,
                     help='Checkpoint state_dict file to resume training from')
 
 parser.add_argument('--start_iter', default=0, type=int,
@@ -51,13 +50,13 @@ parser.add_argument('--num_workers', default=4, type=int,
 parser.add_argument('--cuda', default=True, type=str2bool,
                     help='Use CUDA to train model')
 
-parser.add_argument('--lr', '--learning-rate', default=1e-4, type=float,
+parser.add_argument('--lr', '--learning-rate', default=3e-5, type=float,
                     help='initial learning rate')
 
-parser.add_argument('--momentum', default=0.9, type=float,
+parser.add_argument('--momentum', default=0.8, type=float,
                     help='Momentum value for optim')
 
-parser.add_argument('--weight_decay', default=5e-4, type=float,
+parser.add_argument('--weight_decay', default=4e-4, type=float,
                     help='Weight decay for SGD')
 
 parser.add_argument('--gamma', default=0.1, type=float,
@@ -101,7 +100,7 @@ def train():
         viz = visdom.Visdom()
 
     ssd_net = build_ssd('train', cfg['min_dim'], cfg['num_classes'])
-    # summary(ssd_net, (3, cfg['min_dim'], cfg['min_dim'])) # 输出网络结构
+    # summary(ssd_net, (3, cfg['min_dim'], cfg['min_dim'])) # čžĺşç˝çťçťć
     net = ssd_net
 
     if args.cuda:
@@ -204,12 +203,11 @@ def train():
         loc_loss += loss_l.item()
         conf_loss += loss_c.item()
 
-        if iteration % 10 == 0:
+        if iteration % 100 == 0:
             print('timer: %.4f sec.' % (t1 - t0))
             print('iter ' + repr(iteration) + ' || Loss: %.4f ||' % (loss.item()), end=' ')
 
         if iteration % 1000 == 0:
-            # net保存的是模型参数，而optimizer保存的是优化器
             checkpoint = {
                 'iteration': iteration,
                 'model_state_dict': net.state_dict()

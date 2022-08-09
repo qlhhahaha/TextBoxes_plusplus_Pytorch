@@ -3,7 +3,7 @@ import sys
 module_path = os.path.abspath(os.path.join('..'))
 if module_path not in sys.path:
     sys.path.append(module_path)
-sys.path.append('E:\coding\deeplearning\TextBoxes_plusplus_tianchi')
+sys.path.append('D:\lab_working\SSD\TextBoxes_plusplus_Pytorch')
 
 import torch
 from torch.autograd import Variable
@@ -81,8 +81,8 @@ def run(img_id, Rectangle=False):
 
 if __name__ == '__main__':
     size = 384
-    weight_path = 'E:\coding\deeplearning\TextBoxes_plusplus_tianchi\weights\ssd384_mtwi_60000.pth'
-    mtwi_path = 'F:\chromedown\mtwi_2018_task2_test\icpr_mtwi_task2'
+    weight_path = 'D:\lab_working\SSD\TextBoxes_plusplus_Pytorch\weights\ssd_mtwi_50000.pth'
+    mtwi_path = 'D:\lab_working\SSD\TextBoxes_plusplus_Pytorch\icpr_mtwi_task2'
     start_t = time.time()
     net = build_ssd('test', size, 2)  # initialize SSD
     net.load_weights(weight_path)

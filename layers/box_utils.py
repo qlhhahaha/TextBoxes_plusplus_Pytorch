@@ -70,6 +70,32 @@ def intersect(box_a, box_b):
     return inter[:, :, 0] * inter[:, :, 1]
 
 
+# def jaccard(box_a, box_b):
+#     """Compute the jaccard overlap of two sets of boxes.  The jaccard overlap
+#     is simply the intersection over union of two boxes.  Here we operate on
+#     ground truth boxes and default boxes.
+#     E.g.:
+#         A ∩ B / A ∪ B = A ∩ B / (area(A) + area(B) - A ∩ B)
+#     Args:
+#         box_a: (tensor) Ground truth bounding boxes, Shape: [num_objects,4]
+#         box_b: (tensor) Prior boxes from priorbox layers, Shape: [num_priors,4]
+#     Return:
+#         jaccard overlap: (tensor) Shape: [box_a.size(0), box_b.size(0)]
+#     """
+#     box_a_4 = torch.zeros(box_a.shape[0], 4)
+#     box_a_4[:, 0] = box_a[:, 0:7:2].min(dim=1)[0]
+#     box_a_4[:, 1] = box_a[:, 1:8:2].min(dim=1)[0]
+#     box_a_4[:, 2] = box_a[:, 0:7:2].max(dim=1)[0]
+#     box_a_4[:, 3] = box_a[:, 1:8:2].max(dim=1)[0]
+#
+#     inter = intersect(box_a_4, box_b)
+#     area_a = ((box_a_4[:, 2] - box_a_4[:, 0]) *
+#               (box_a_4[:, 3] - box_a_4[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
+#     area_b = ((box_b[:, 2] - box_b[:, 0]) *
+#               (box_b[:, 3] - box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
+#     union = area_a + area_b - inter
+#     return inter / union  # [A,B]
+
 def jaccard(box_a, box_b):
     """Compute the jaccard overlap of two sets of boxes.  The jaccard overlap
     is simply the intersection over union of two boxes.  Here we operate on
@@ -88,14 +114,19 @@ def jaccard(box_a, box_b):
     box_a_4[:, 2] = box_a[:, 0:7:2].max(dim=1)[0]
     box_a_4[:, 3] = box_a[:, 1:8:2].max(dim=1)[0]
 
-    inter = intersect(box_a_4, box_b)
+    box_b_4 = torch.zeros(box_b.shape[0], 4)
+    box_b_4[:, 0] = box_b[:, 0:7:2].min(dim=1)[0]
+    box_b_4[:, 1] = box_b[:, 1:8:2].min(dim=1)[0]
+    box_b_4[:, 2] = box_b[:, 0:7:2].max(dim=1)[0]
+    box_b_4[:, 3] = box_b[:, 1:8:2].max(dim=1)[0]
+
+    inter = intersect(box_a_4, box_b_4)
     area_a = ((box_a_4[:, 2] - box_a_4[:, 0]) *
               (box_a_4[:, 3] - box_a_4[:, 1])).unsqueeze(1).expand_as(inter)  # [A,B]
-    area_b = ((box_b[:, 2] - box_b[:, 0]) *
-              (box_b[:, 3] - box_b[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
+    area_b = ((box_b_4[:, 2] - box_b_4[:, 0]) *
+              (box_b_4[:, 3] - box_b_4[:, 1])).unsqueeze(0).expand_as(inter)  # [A,B]
     union = area_a + area_b - inter
     return inter / union  # [A,B]
-
 
 def intersect_ploy(box_a, box_b):
     """
@@ -162,7 +193,7 @@ def match(threshold, truths, priors, variances, labels, loc_t, conf_t, idx):
         The matched indices corresponding to 1)location and 2)confidence preds.
     """
     # jaccard index
-    overlaps = jaccard(truths, point_form(priors))
+    overlaps = jaccard(truths, point_form_2(priors))
 
     # (Bipartite Matching)
     # [1,num_objects] best prior for each ground truth
